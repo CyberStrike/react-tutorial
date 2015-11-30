@@ -13,6 +13,28 @@ var CommentBox = React.createClass({
       }
     });
   },
+  handleCommentSubmit: function(comment){
+
+    // Immediately add to list
+    let comments = this.state.data;
+    comment.id = Date.now();
+    let newComments = comments.concat([comment]);
+    this.setState({data: newComments});
+
+    // Post to Server
+    $.ajax({
+      url: this.props.url,
+      dataType: 'json',
+      type: 'POST',
+      data: comment,
+      success: function(data){
+        this.setState({data: data});
+      }.bind(this),
+      error: function(xhr, status, err){
+        console.error(this.props.url, status, err.toString())
+      }.bind(this)
+    })
+  },
   getInitialState: function(){
     return {data: []}
   },
@@ -25,7 +47,7 @@ var CommentBox = React.createClass({
       <div className="commentBox">
         <h1>Comments</h1>
         <CommentList data={this.state.data}/>
-        <CommentForm/>
+        <CommentForm onCommentSubmit={this.handleCommentSubmit}/>
       </div>
   );}
 });
@@ -64,9 +86,33 @@ var CommentForm = React.createClass({
       text: e.target.value
     })
   },
+  handleSubmit: function(e){
+
+    e.preventDefault();
+
+    let author = this.state.author.trim();
+    let text = this.state.text.trim();
+
+    if (!text || !author ){
+      return;
+    }
+
+    // Bubble up the data
+    this.props.onCommentSubmit({
+      author: author,
+      text: text
+    });
+
+    // Clears the bound values
+    this.setState({
+      author: this.state.author,
+      text:''
+    });
+
+  },
   render: function() {
     return (
-      <form className="commentForm">
+      <form className="commentForm" onSubmit={this.handleSubmit}>
         <input type="text"
                placeholder="Your Name"
                value={this.state.author}
